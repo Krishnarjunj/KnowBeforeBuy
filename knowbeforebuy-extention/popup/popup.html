@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    body {
+      width: 300px;
+      padding: 20px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+    .header {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    .logo {
+      font-size: 24px;
+      font-weight: bold;
+      color: #667eea;
+      margin-bottom: 5px;
+    }
+    .tagline {
+      color: #666;
+      font-size: 14px;
+    }
+    .status {
+      padding: 15px;
+      border-radius: 8px;
+      margin-bottom: 15px;
+      text-align: center;
+    }
+    .status.active {
+      background: #d4edda;
+      color: #155724;
+      border: 1px solid #c3e6cb;
+    }
+    .status.inactive {
+      background: #f8d7da;
+      color: #721c24;
+      border: 1px solid #f5c6cb;
+    }
+    .instructions {
+      font-size: 14px;
+      line-height: 1.5;
+      color: #333;
+    }
+    .supported-sites {
+      margin-top: 15px;
+      font-size: 12px;
+      color: #666;
+    }
+    .supported-sites ul {
+      margin: 5px 0;
+      padding-left: 20px;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="logo">Knowbeforebuy</div>
+    <div class="tagline">AI Product Analysis</div>
+  </div>
+
+  <div id="status" class="status">
+    <span id="status-text">Checking page...</span>
+  </div>
+
+  <div class="instructions">
+    <p><strong>How to use:</strong></p>
+    <ol>
+      <li>Visit any supported e-commerce product page</li>
+      <li>Look for the floating chat button</li>
+      <li>Click to open the AI assistant</li>
+      <li>Ask questions about the product!</li>
+    </ol>
+  </div>
+
+  <div class="supported-sites">
+    <strong>Supported sites:</strong>
+    <ul>
+      <li>Amazon</li>
+      <li>Nykaa</li>
+      <li>Flipkart</li>
+      <li>Myntra</li>
+    </ul>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
