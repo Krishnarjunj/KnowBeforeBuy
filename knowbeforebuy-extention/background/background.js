@@ -1,10 +1,9 @@
-// Background script for handling API communication
 const BACKEND_URL = 'http://localhost:5000';
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === 'analyzePage') {
     handlePageAnalysis(request, sendResponse);
-    return true; // Keep message channel open for async response
+    return true; 
   } else if (request.action === 'sendChatMessage') {
     handleChatMessage(request, sendResponse);
     return true;
@@ -26,7 +25,7 @@ async function handlePageAnalysis(request, sendResponse) {
 
     const data = await response.json();
     
-    // Store analyzed content for chat context
+
     chrome.storage.local.set({
       [`analyzed_${request.url}`]: data.content
     });
@@ -40,7 +39,7 @@ async function handlePageAnalysis(request, sendResponse) {
 
 async function handleChatMessage(request, sendResponse) {
   try {
-    // Get stored analysis for context
+
     const result = await chrome.storage.local.get([`analyzed_${request.url}`]);
     const context = result[`analyzed_${request.url}`] || '';
 
