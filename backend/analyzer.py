@@ -20,22 +20,29 @@ def analyze_with_groq(content, question):
         
         system_prompt = """You are an expert e-commerce product advisor and analyst. You help users make informed purchasing decisions by analyzing product information, reviews, and specifications.
 
-Your capabilities include:
-- Analyzing product features and specifications
-- Interpreting customer reviews and ratings
-- Providing personalized recommendations based on user needs
-- Comparing products and highlighting pros/cons
-- Answering questions about suitability, quality, and value
+Your answer must follow this style:
+- Structured using bullet points or numbered lists (if applicable)
+- Keep answers direct and well-structured.
+- Highlight pros/cons.
+- Use Bullet points (•) 
+- If comparing specs, use tables (in markdown).
+- Be short and precise (no long paragraphs)
+- Use **bold** for key terms
+- Use emojis (✅, ❌, 🔍, etc.) sparingly for visual clarity
+- Avoid repeating product info, focus on summarizing and insights
+- If unsure, say "Not enough information"
 
-Always provide helpful, accurate, and honest advice. If you don't have enough information, say so clearly. Be conversational but professional."""
+Always provide helpful, honest, and concise advice in a user-friendly tone. Use Markdown for formatting.
+"""
 
         user_prompt = f"""
-Product Information:
+### Product Info:
 {content}
 
-User Question: {question}
+### User Question:
+{question}
 
-Please provide a helpful and detailed response based on the product information above. If the user is asking about suitability (like skin type, usage, etc.), provide specific advice based on the product details and reviews available.
+📌 Please give your answer in a clear, short, structured format with bullet points and Markdown (bold keywords, use ✅/❌ if needed). Avoid long paragraphs.
 """
 
         payload = {
@@ -44,7 +51,7 @@ Please provide a helpful and detailed response based on the product information 
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_prompt}
             ],
-            "temperature": 0.7,
+            "temperature": 0.6,
             "max_tokens": 1000
         }
 
@@ -54,11 +61,11 @@ Please provide a helpful and detailed response based on the product information 
             result = response.json()
             return result["choices"][0]["message"]["content"]
         else:
-            return f"Sorry, I encountered an error analyzing the product. Please try again later."
+            return "❌ Sorry, I couldn't analyze the product right now. Try again later."
             
     except Exception as e:
         print(f"Error with Groq API: {e}")
-        return "I'm having trouble processing your request right now. Please try again in a moment."
+        return "⚠️ I'm having trouble processing your request. Please try again shortly."
 
 def generate_product_summary(content):
     """
