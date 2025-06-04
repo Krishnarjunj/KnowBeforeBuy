@@ -1,15 +1,14 @@
-// Popup script
 document.addEventListener('DOMContentLoaded', async () => {
   const statusDiv = document.getElementById('status');
   const statusText = document.getElementById('status-text');
 
   try {
-    // Get current tab
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-    
-    // Check if current site is supported
-    const supportedDomains = ['amazon.com', 'nykaa.com', 'flipkart.com', 'myntra.com'];
-    const isSupported = supportedDomains.some(domain => tab.url.includes(domain));
+
+    const supportedDomains = ['amazon.in', 'nykaa.com', 'flipkart.com', 'myntra.com'];
+    const currentHostname = new URL(tab.url).hostname;
+
+    const isSupported = supportedDomains.some(domain => currentHostname.includes(domain));
 
     if (isSupported) {
       statusDiv.className = 'status active';
@@ -21,5 +20,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   } catch (error) {
     statusDiv.className = 'status inactive';
     statusText.textContent = '❌ Error checking page status';
+    console.error('Popup domain check error:', error);
   }
 });
