@@ -23,7 +23,6 @@ def scrape_website(website):
     options.add_experimental_option("excludeSwitches", ["enable-automation"])
     options.add_experimental_option('useAutomationExtension', False)
     
-    # Add user agent to avoid detection
     options.add_argument("--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
 
     if os.environ.get("CHROME_BIN"):
@@ -41,10 +40,7 @@ def scrape_website(website):
     try:
         print("Navigating to website...")
         driver.get(website)
-        
-        # Wait for page to load and handle different e-commerce sites
         wait_for_content(driver, website)
-        
         print("Scraping page content...")
         html = driver.page_source
         return html
@@ -61,30 +57,23 @@ def wait_for_content(driver, url):
     
     try:
         if 'amazon.com' in url:
-            # Wait for Amazon product title
             wait.until(EC.presence_of_element_located((By.ID, "productTitle")))
-            time.sleep(2)  # Additional wait for reviews to load
+            time.sleep(2) 
             
         elif 'nykaa.com' in url:
-            # Wait for Nykaa product info
             wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, ".product-title, .css-1gc4zls")))
-            time.sleep(3)  # Wait for reviews and recommendations
+            time.sleep(3)  
             
         elif 'flipkart.com' in url:
-            # Wait for Flipkart product title
             wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "._35KyD6, .x2Jnpn")))
             time.sleep(2)
             
         elif 'myntra.com' in url:
-            # Wait for Myntra product info
             wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, ".pdp-name, .pdp-title")))
             time.sleep(2)
             
         else:
-            # Generic wait for any product page
             time.sleep(3)
-            
-        # Scroll to load lazy-loaded content
         driver.execute_script("window.scrollTo(0, document.body.scrollHeight/2);")
         time.sleep(1)
         driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
@@ -106,37 +95,30 @@ def clean_body_content(body_content):
     """Clean and format the body content with e-commerce focus"""
     soup = BeautifulSoup(body_content, "html.parser")
     
-    # Remove unwanted elements
     for element in soup(["script", "style", "nav", "footer", "header", "aside"]):
         element.decompose()
-    
-    # Remove ads and promotional content
+
     for element in soup.find_all(class_=lambda x: x and any(word in x.lower() for word in ['ad', 'promo', 'banner', 'popup'])):
         element.decompose()
-    
-    # Extract structured product information
+
     product_info = extract_product_structure(soup)
-    
-    # Get general text content
+
     cleaned_content = soup.get_text(separator="\n")
     cleaned_content = "\n".join(
         line.strip() for line in cleaned_content.splitlines() if line.strip()
     )
-    
-    # Combine structured info with general content
+
     if product_info:
         final_content = f"{product_info}\n\n{cleaned_content}"
     else:
         final_content = cleaned_content
-    
-    # Limit content size
+
     return final_content[:15000]
 
 def extract_product_structure(soup):
     """Extract structured product information"""
     product_parts = []
     
-    # Try to find product title
     title_selectors = ['#productTitle', '.product-title', '.pdp-name', '._35KyD6', '.css-1gc4zls']
     for selector in title_selectors:
         title_elem = soup.select_one(selector)
@@ -144,7 +126,6 @@ def extract_product_structure(soup):
             product_parts.append(f"PRODUCT TITLE: {title_elem.get_text().strip()}")
             break
     
-    # Try to find price
     price_selectors = ['.a-price-whole', '.product-price', '.pdp-price', '._1_WHN1', '.css-1kc83wj']
     for selector in price_selectors:
         price_elem = soup.select_one(selector)
@@ -152,15 +133,13 @@ def extract_product_structure(soup):
             product_parts.append(f"PRICE: {price_elem.get_text().strip()}")
             break
     
-    # Try to find rating
     rating_selectors = ['.a-icon-alt', '.rating-value', '.index-overallRating', '._2d4LTz']
     for selector in rating_selectors:
         rating_elem = soup.select_one(selector)
         if rating_elem:
             product_parts.append(f"RATING: {rating_elem.get_text().strip()}")
             break
-    
-    # Extract reviews (limit to first 5)
+
     review_selectors = ['[data-hook="review-body"]', '.review-content', '.user-review-reviewTextWrapper', '._6K-7Co']
     for selector in review_selectors:
         review_elems = soup.select(selector)[:5]
