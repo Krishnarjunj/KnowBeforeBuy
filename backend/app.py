@@ -7,7 +7,6 @@ from analyzer import analyze_with_groq
 app = Flask(__name__)
 CORS(app)
 
-# Store analyzed content temporarily
 analyzed_content = {}
 
 @app.route('/analyze', methods=['POST'])
@@ -21,12 +20,12 @@ def analyze_page():
         
         print(f"Scraping URL: {url}")
         
-        # Use Selenium to scrape the website
+ 
         html_content = scrape_website(url)
         body_content = extract_body_content(html_content)
         cleaned_content = clean_body_content(body_content)
         
-        # Store for chat context
+
         analyzed_content[url] = cleaned_content
         
         return jsonify({
@@ -49,11 +48,11 @@ def chat():
         if not message:
             return jsonify({'error': 'Message is required'}), 400
         
-        # Get stored context
+
         context = analyzed_content.get(url, '')
         
         if not context:
-            # If no context, try to scrape the page
+
             try:
                 html_content = scrape_website(url)
                 body_content = extract_body_content(html_content)
@@ -62,7 +61,7 @@ def chat():
             except:
                 context = "Limited product information available."
         
-        # Generate response using Groq
+
         response = analyze_with_groq(context, message)
         
         return jsonify({
