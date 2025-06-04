@@ -4,84 +4,289 @@
   <meta charset="utf-8">
   <style>
     body {
-      width: 300px;
-      padding: 20px;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      width: 320px;
+      padding: 24px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'SF Pro Display', Roboto, sans-serif;
+      background: linear-gradient(145deg, #0f0f23 0%, #1a1a2e 50%, #16213e 100%);
+      color: #fff;
+      margin: 0;
+      min-height: 400px;
+      position: relative;
+      overflow: hidden;
     }
+
+    body::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: 
+        radial-gradient(circle at 20% 80%, rgba(0, 245, 255, 0.1) 0%, transparent 50%),
+        radial-gradient(circle at 80% 20%, rgba(255, 0, 128, 0.1) 0%, transparent 50%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .container {
+      position: relative;
+      z-index: 1;
+    }
+
     .header {
       text-align: center;
+      margin-bottom: 24px;
+      position: relative;
+    }
+
+    .logo {
+      font-size: 28px;
+      font-weight: 800;
+      background: linear-gradient(135deg, #00f5ff 0%, #ff00ff 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 8px;
+      letter-spacing: -0.5px;
+      text-shadow: 0 0 30px rgba(0, 245, 255, 0.5);
+    }
+
+    .tagline {
+      color: rgba(255, 255, 255, 0.7);
+      font-size: 14px;
+      font-weight: 500;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+
+    .status {
+      padding: 16px 20px;
+      border-radius: 16px;
+      margin-bottom: 20px;
+      text-align: center;
+      position: relative;
+      backdrop-filter: blur(10px);
+      border: 1px solid transparent;
+      transition: all 0.3s ease;
+      font-weight: 600;
+      letter-spacing: 0.3px;
+    }
+
+    .status::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      border-radius: 16px;
+      padding: 1px;
+      background: linear-gradient(135deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+      -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      -webkit-mask-composite: exclude;
+      mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      mask-composite: exclude;
+    }
+
+    .status.active {
+      background: linear-gradient(135deg, rgba(0, 255, 136, 0.15) 0%, rgba(0, 245, 255, 0.15) 100%);
+      color: #00ff88;
+      border-color: rgba(0, 255, 136, 0.3);
+      box-shadow: 
+        0 0 20px rgba(0, 255, 136, 0.2),
+        inset 0 1px 0 rgba(0, 255, 136, 0.1);
+    }
+
+    .status.active::before {
+      animation: pulse-green 2s ease-in-out infinite;
+    }
+
+    .status.inactive {
+      background: linear-gradient(135deg, rgba(255, 0, 80, 0.15) 0%, rgba(255, 64, 129, 0.15) 100%);
+      color: #ff0050;
+      border-color: rgba(255, 0, 80, 0.3);
+      box-shadow: 
+        0 0 20px rgba(255, 0, 80, 0.2),
+        inset 0 1px 0 rgba(255, 0, 80, 0.1);
+    }
+
+    .status.inactive::before {
+      animation: pulse-red 2s ease-in-out infinite;
+    }
+
+    .instructions {
+      font-size: 15px;
+      line-height: 1.6;
+      color: rgba(255, 255, 255, 0.9);
       margin-bottom: 20px;
     }
-    .logo {
-      font-size: 24px;
-      font-weight: bold;
-      color: #667eea;
-      margin-bottom: 5px;
+
+    .instructions p {
+      margin: 0 0 12px 0;
     }
-    .tagline {
-      color: #666;
-      font-size: 14px;
+
+    .instructions strong {
+      color: #00f5ff;
+      font-weight: 700;
+      text-shadow: 0 0 8px rgba(0, 245, 255, 0.3);
     }
-    .status {
-      padding: 15px;
-      border-radius: 8px;
-      margin-bottom: 15px;
-      text-align: center;
+
+    .instructions ol {
+      margin: 12px 0;
+      padding-left: 24px;
+      counter-reset: step-counter;
+      list-style: none;
     }
-    .status.active {
-      background: #d4edda;
-      color: #155724;
-      border: 1px solid #c3e6cb;
+
+    .instructions ol li {
+      counter-increment: step-counter;
+      margin-bottom: 10px;
+      position: relative;
+      padding-left: 8px;
     }
-    .status.inactive {
-      background: #f8d7da;
-      color: #721c24;
-      border: 1px solid #f5c6cb;
-    }
-    .instructions {
-      font-size: 14px;
-      line-height: 1.5;
-      color: #333;
-    }
-    .supported-sites {
-      margin-top: 15px;
+
+    .instructions ol li::before {
+      content: counter(step-counter);
+      position: absolute;
+      left: -24px;
+      top: 0;
+      background: linear-gradient(135deg, #00f5ff 0%, #0099cc 100%);
+      color: #000;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
       font-size: 12px;
-      color: #666;
+      font-weight: 700;
+      box-shadow: 0 2px 8px rgba(0, 245, 255, 0.3);
     }
+
+    .supported-sites {
+      margin-top: 20px;
+      font-size: 13px;
+      color: rgba(255, 255, 255, 0.8);
+      background: rgba(0, 0, 0, 0.2);
+      padding: 16px;
+      border-radius: 12px;
+      border: 1px solid rgba(0, 245, 255, 0.1);
+      backdrop-filter: blur(10px);
+    }
+
+    .supported-sites strong {
+      color: #00f5ff;
+      font-weight: 700;
+      display: block;
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      font-size: 12px;
+    }
+
     .supported-sites ul {
-      margin: 5px 0;
-      padding-left: 20px;
+      margin: 8px 0 0 0;
+      padding-left: 0;
+      list-style: none;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .supported-sites ul li {
+      background: rgba(0, 245, 255, 0.1);
+      padding: 8px 12px;
+      border-radius: 8px;
+      text-align: center;
+      font-weight: 500;
+      border: 1px solid rgba(0, 245, 255, 0.2);
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .supported-sites ul li::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(0, 245, 255, 0.1), transparent);
+      transition: left 0.5s;
+    }
+
+    .supported-sites ul li:hover {
+      background: rgba(0, 245, 255, 0.2);
+      border-color: rgba(0, 245, 255, 0.4);
+      transform: translateY(-2px);
+      color: #00f5ff;
+    }
+
+    .supported-sites ul li:hover::before {
+      left: 100%;
+    }
+
+    @keyframes pulse-green {
+      0%, 100% { box-shadow: 0 0 20px rgba(0, 255, 136, 0.2), inset 0 1px 0 rgba(0, 255, 136, 0.1); }
+      50% { box-shadow: 0 0 30px rgba(0, 255, 136, 0.4), inset 0 1px 0 rgba(0, 255, 136, 0.2); }
+    }
+
+    @keyframes pulse-red {
+      0%, 100% { box-shadow: 0 0 20px rgba(255, 0, 80, 0.2), inset 0 1px 0 rgba(255, 0, 80, 0.1); }
+      50% { box-shadow: 0 0 30px rgba(255, 0, 80, 0.4), inset 0 1px 0 rgba(255, 0, 80, 0.2); }
+    }
+
+    /* Scrollbar styling */
+    ::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: rgba(0, 245, 255, 0.3);
+      border-radius: 3px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(0, 245, 255, 0.5);
     }
   </style>
 </head>
 <body>
-  <div class="header">
-    <div class="logo">Knowbeforebuy</div>
-    <div class="tagline">AI Product Analysis</div>
-  </div>
+  <div class="container">
+    <div class="header">
+      <div class="logo">Knowbeforebuy</div>
+      <div class="tagline">AI Product Analysis</div>
+    </div>
 
-  <div id="status" class="status">
-    <span id="status-text">Checking page...</span>
-  </div>
+    <div id="status" class="status">
+      <span id="status-text">Checking page...</span>
+    </div>
 
-  <div class="instructions">
-    <p><strong>How to use:</strong></p>
-    <ol>
-      <li>Visit any supported e-commerce product page</li>
-      <li>Look for the floating chat button</li>
-      <li>Click to open the AI assistant</li>
-      <li>Ask questions about the product!</li>
-    </ol>
-  </div>
+    <div class="instructions">
+      <p><strong>How to use:</strong></p>
+      <ol>
+        <li>Visit any supported e-commerce product page</li>
+        <li>Look for the floating chat button</li>
+        <li>Click to open the AI assistant</li>
+        <li>Ask questions about the product!</li>
+      </ol>
+    </div>
 
-  <div class="supported-sites">
-    <strong>Supported sites:</strong>
-    <ul>
-      <li>Amazon</li>
-      <li>Nykaa</li>
-      <li>Flipkart</li>
-      <li>Myntra</li>
-    </ul>
+    <div class="supported-sites">
+      <strong>Supported sites:</strong>
+      <ul>
+        <li>Amazon</li>
+        <li>Nykaa</li>
+        <li>Flipkart</li>
+        <li>Myntra</li>
+      </ul>
+    </div>
   </div>
 
   <script src="popup.js"></script>
