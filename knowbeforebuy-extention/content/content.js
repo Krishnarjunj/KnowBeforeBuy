@@ -1,6 +1,5 @@
-// Content script for floating chatbot
 class KnowBeforeBuy {
-   constructor() {
+  constructor() {
     this.isInitialized = false;
     this.chatbotVisible = false;
     this.currentUrl = window.location.href;
@@ -9,7 +8,7 @@ class KnowBeforeBuy {
 
   init() {
     if (this.isInitialized) return;
-    
+
     if (this.isSupportedSite()) {
       this.createFloatingButton();
       this.createChatbot();
@@ -18,23 +17,8 @@ class KnowBeforeBuy {
   }
 
   isSupportedSite() {
-    const supportedDomains = [
-      'amazon.in', 'nykaa.com', 'flipkart.com', 'myntra.com'
-    ];
+    const supportedDomains = ['amazon.in', 'nykaa.com', 'flipkart.com', 'myntra.com'];
     return supportedDomains.some(domain => window.location.hostname.includes(domain));
-  }
-    async scrapeAndAnalyze() {
-    try {
-      // Just send the URL - let backend handle scraping
-      chrome.runtime.sendMessage({
-        action: 'analyzePage',
-        url: window.location.href
-      });
-      
-      this.addMessage("Analyzing this product page...", 'bot');
-    } catch (error) {
-      console.error('Error initiating analysis:', error);
-    }
   }
 
   createFloatingButton() {
@@ -54,7 +38,7 @@ class KnowBeforeBuy {
     chatbotContainer.id = 'kbb-chatbot';
     chatbotContainer.innerHTML = `
       <div class="kbb-chatbot-header">
-        <h3>Knowbeforebuy AI Assistant</h3>
+        <h3>KnowBeforeBuy - AI Assistant</h3>
         <button id="kbb-close-btn">&times;</button>
       </div>
       <div class="kbb-chatbot-messages" id="kbb-messages">
@@ -91,10 +75,9 @@ class KnowBeforeBuy {
   toggleChatbot() {
     const chatbot = document.getElementById('kbb-chatbot');
     this.chatbotVisible = !this.chatbotVisible;
-    
+
     if (this.chatbotVisible) {
       chatbot.style.display = 'flex';
-      // Scrape page content when chatbot opens
       this.scrapeAndAnalyze();
     } else {
       chatbot.style.display = 'none';
@@ -104,20 +87,19 @@ class KnowBeforeBuy {
   async scrapeAndAnalyze() {
     try {
       const pageContent = this.extractPageContent();
-      
-      // Send to background script to forward to backend
+
       chrome.runtime.sendMessage({
         action: 'analyzePage',
         url: window.location.href,
         content: pageContent
       });
+
     } catch (error) {
       console.error('Error scraping page:', error);
     }
   }
 
   extractPageContent() {
-    // Extract product information based on the site
     const hostname = window.location.hostname;
     let productData = {};
 
@@ -186,12 +168,12 @@ class KnowBeforeBuy {
   async sendMessage() {
     const input = document.getElementById('kbb-input');
     const message = input.value.trim();
-    
+
     if (!message) return;
 
     this.addMessage(message, 'user');
     input.value = '';
-    
+
     this.showLoading(true);
 
     try {
@@ -213,7 +195,13 @@ class KnowBeforeBuy {
     const messagesContainer = document.getElementById('kbb-messages');
     const messageDiv = document.createElement('div');
     messageDiv.className = `kbb-message kbb-${sender}-message`;
-    messageDiv.textContent = text;
+
+    if (sender === 'bot') {
+      messageDiv.innerHTML = this.parseMarkdown(text);
+    } else {
+      messageDiv.textContent = text;
+    }
+
     messagesContainer.appendChild(messageDiv);
     messagesContainer.scrollTop = messagesContainer.scrollHeight;
   }
@@ -222,9 +210,34 @@ class KnowBeforeBuy {
     const loading = document.getElementById('kbb-loading');
     loading.style.display = show ? 'flex' : 'none';
   }
+
+  parseMarkdown(text) {
+
+  text = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+
+  text = text.replace(/(^|\n)[\-•] (.*?)(?=\n|$)/g, '<li>$2</li>');
+  if (text.includes('<li>')) {
+    text = `<ul>${text}</ul>`;
+  }
+
+  text = text.replace(/(^|\n)\d+\. (.*?)(?=\n|$)/g, '<li>$2</li>');
+
+  const tableRegex = /\|(.+?)\|\n\|([-\s|]+)\|\n((\|.+\|\n?)*)/g;
+  text = text.replace(tableRegex, (match, headers, separator, rows) => {
+    const headerCells = headers.split('|').map(h => `<th>${h.trim()}</th>`).join('');
+    const rowLines = rows.trim().split('\n');
+    const rowHTML = rowLines.map(line => {
+      const cells = line.split('|').map(c => `<td>${c.trim()}</td>`).join('');
+      return `<tr>${cells}</tr>`;
+    }).join('');
+    return `<table><thead><tr>${headerCells}</tr></thead><tbody>${rowHTML}</tbody></table>`;
+  });
+
+  return text.replace(/\n/g, '<br>');
 }
 
-// Initialize when page loads
+}
+
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', () => new KnowBeforeBuy());
 } else {
