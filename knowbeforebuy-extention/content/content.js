@@ -2,13 +2,13 @@ class KnowBeforeBuy {
   constructor() {
     this.isInitialized = false;
     this.chatbotVisible = false;
+    this.chatReady = false;
     this.currentUrl = window.location.href;
     this.init();
   }
 
   init() {
-    if (this.isInitialized) return;
-
+    if (this.isInitialized || document.getElementById('kbb-floating-btn')) return;
     if (this.isSupportedSite()) {
       this.createFloatingButton();
       this.createChatbot();
@@ -34,9 +34,9 @@ class KnowBeforeBuy {
   }
 
   createChatbot() {
-    const chatbotContainer = document.createElement('div');
-    chatbotContainer.id = 'kbb-chatbot';
-    chatbotContainer.innerHTML = `
+    const container = document.createElement('div');
+    container.id = 'kbb-chatbot';
+    container.innerHTML = `
       <div class="kbb-chatbot-header">
         <h3>KnowBeforeBuy - AI Assistant</h3>
         <button id="kbb-close-btn">&times;</button>
@@ -47,7 +47,7 @@ class KnowBeforeBuy {
         </div>
       </div>
       <div class="kbb-chatbot-input">
-        <input type="text" id="kbb-input" placeholder="Ask about this product...">
+        <input type="text" id="kbb-input" placeholder="Ask about this product..." disabled>
         <button id="kbb-send-btn">Send</button>
       </div>
       <div class="kbb-loading" id="kbb-loading" style="display: none;">
@@ -55,19 +55,14 @@ class KnowBeforeBuy {
         <span>Analyzing...</span>
       </div>
     `;
-
-    document.body.appendChild(chatbotContainer);
+    document.body.appendChild(container);
     this.setupChatbotEvents();
   }
 
   setupChatbotEvents() {
-    const closeBtn = document.getElementById('kbb-close-btn');
-    const sendBtn = document.getElementById('kbb-send-btn');
-    const input = document.getElementById('kbb-input');
-
-    closeBtn.addEventListener('click', () => this.toggleChatbot());
-    sendBtn.addEventListener('click', () => this.sendMessage());
-    input.addEventListener('keypress', (e) => {
+    document.getElementById('kbb-close-btn').addEventListener('click', () => this.toggleChatbot());
+    document.getElementById('kbb-send-btn').addEventListener('click', () => this.sendMessage());
+    document.getElementById('kbb-input').addEventListener('keypress', (e) => {
       if (e.key === 'Enter') this.sendMessage();
     });
   }
@@ -86,16 +81,35 @@ class KnowBeforeBuy {
 
   async scrapeAndAnalyze() {
     try {
+      this.chatReady = false;
+      this.showLoading(true);
+      document.getElementById('kbb-input').disabled = true;
+
       const pageContent = this.extractPageContent();
 
-      chrome.runtime.sendMessage({
-        action: 'analyzePage',
-        url: window.location.href,
-        content: pageContent
+      const response = await fetch('http://localhost:5000/analyze', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          url: window.location.href,
+          content: pageContent
+        })
       });
 
+      const result = await response.json();
+      this.showLoading(false);
+
+      if (result.success) {
+        this.chatReady = true;
+        document.getElementById('kbb-input').disabled = false;
+        this.addMessage("✅ Page analyzed. Ask me anything about the product!", 'bot');
+      } else {
+        this.addMessage("❌ Couldn't analyze this product right now. Try again later.", 'bot');
+      }
     } catch (error) {
-      console.error('Error scraping page:', error);
+      console.error('Error analyzing page:', error);
+      this.showLoading(false);
+      this.addMessage("❌ Couldn't analyze this product right now. Try again later.", 'bot');
     }
   }
 
@@ -103,20 +117,15 @@ class KnowBeforeBuy {
     const hostname = window.location.hostname;
     let productData = {};
 
-    if (hostname.includes('amazon.in')) {
-      productData = this.extractAmazonData();
-    } else if (hostname.includes('nykaa.com')) {
-      productData = this.extractNykaaData();
-    } else if (hostname.includes('flipkart.com')) {
-      productData = this.extractFlipkartData();
-    } else if (hostname.includes('myntra.com')) {
-      productData = this.extractMyntraData();
-    }
+    if (hostname.includes('amazon.in')) productData = this.extractAmazonData();
+    else if (hostname.includes('nykaa.com')) productData = this.extractNykaaData();
+    else if (hostname.includes('flipkart.com')) productData = this.extractFlipkartData();
+    else if (hostname.includes('myntra.com')) productData = this.extractMyntraData();
 
     return {
       url: window.location.href,
       title: document.title,
-      productData: productData,
+      productData,
       fullContent: document.body.innerText
     };
   }
@@ -169,73 +178,71 @@ class KnowBeforeBuy {
     const input = document.getElementById('kbb-input');
     const message = input.value.trim();
 
-    if (!message) return;
+    if (!message || !this.chatReady) {
+      this.addMessage("⏳ Please wait until analysis is complete.", 'bot');
+      return;
+    }
 
     this.addMessage(message, 'user');
     input.value = '';
-
     this.showLoading(true);
 
     try {
-      const response = await chrome.runtime.sendMessage({
-        action: 'sendChatMessage',
-        message: message,
-        url: window.location.href
+      const response = await fetch('http://localhost:5000/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message,
+          url: window.location.href
+        })
       });
 
+      const result = await response.json();
       this.showLoading(false);
-      this.addMessage(response.reply, 'bot');
+      this.addMessage(result.reply || '⚠️ No meaningful reply.', 'bot');
     } catch (error) {
+      console.error('Chat error:', error);
       this.showLoading(false);
-      this.addMessage('Sorry, I encountered an error. Please try again.', 'bot');
+      this.addMessage('⚠️ Server error. Try again later.', 'bot');
     }
   }
 
   addMessage(text, sender) {
-    const messagesContainer = document.getElementById('kbb-messages');
-    const messageDiv = document.createElement('div');
-    messageDiv.className = `kbb-message kbb-${sender}-message`;
-
-    if (sender === 'bot') {
-      messageDiv.innerHTML = this.parseMarkdown(text);
-    } else {
-      messageDiv.textContent = text;
-    }
-
-    messagesContainer.appendChild(messageDiv);
-    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    const container = document.getElementById('kbb-messages');
+    const msg = document.createElement('div');
+    msg.className = `kbb-message kbb-${sender}-message`;
+    msg.innerHTML = sender === 'bot' ? this.parseMarkdown(text) : this.escapeHtml(text);
+    container.appendChild(msg);
+    container.scrollTop = container.scrollHeight;
   }
 
   showLoading(show) {
-    const loading = document.getElementById('kbb-loading');
-    loading.style.display = show ? 'flex' : 'none';
+    const loader = document.getElementById('kbb-loading');
+    loader.style.display = show ? 'flex' : 'none';
+  }
+
+  escapeHtml(unsafe) {
+    return unsafe.replace(/[&<"']/g, m => ({
+      '&': '&amp;', '<': '&lt;', '"': '&quot;', "'": '&#039;'
+    }[m]));
   }
 
   parseMarkdown(text) {
-
-  text = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-
-  text = text.replace(/(^|\n)[\-•] (.*?)(?=\n|$)/g, '<li>$2</li>');
-  if (text.includes('<li>')) {
-    text = `<ul>${text}</ul>`;
+    text = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+    text = text.replace(/(^|\n)[\-•] (.*?)(?=\n|$)/g, '<li>$2</li>');
+    if (text.includes('<li>')) text = `<ul>${text}</ul>`;
+    text = text.replace(/(^|\n)\d+\. (.*?)(?=\n|$)/g, '<li>$2</li>');
+    const tableRegex = /\|(.+?)\|\n\|([-\s|]+)\|\n((\|.+\|\n?)*)/g;
+    text = text.replace(tableRegex, (match, headers, sep, rows) => {
+      const headerCells = headers.split('|').map(h => `<th>${h.trim()}</th>`).join('');
+      const rowHTML = rows.trim().split('\n').map(line => {
+        const cells = line.split('|').map(c => `<td>${c.trim()}</td>`).join('');
+        return `<tr>${cells}</tr>`;
+      }).join('');
+      return `<table><thead><tr>${headerCells}</tr></thead><tbody>${rowHTML}</tbody></table>`;
+    });
+    return text.replace(/\n/g, '<br>');
   }
-
-  text = text.replace(/(^|\n)\d+\. (.*?)(?=\n|$)/g, '<li>$2</li>');
-
-  const tableRegex = /\|(.+?)\|\n\|([-\s|]+)\|\n((\|.+\|\n?)*)/g;
-  text = text.replace(tableRegex, (match, headers, separator, rows) => {
-    const headerCells = headers.split('|').map(h => `<th>${h.trim()}</th>`).join('');
-    const rowLines = rows.trim().split('\n');
-    const rowHTML = rowLines.map(line => {
-      const cells = line.split('|').map(c => `<td>${c.trim()}</td>`).join('');
-      return `<tr>${cells}</tr>`;
-    }).join('');
-    return `<table><thead><tr>${headerCells}</tr></thead><tbody>${rowHTML}</tbody></table>`;
-  });
-
-  return text.replace(/\n/g, '<br>');
-}
-
 }
 
 if (document.readyState === 'loading') {
